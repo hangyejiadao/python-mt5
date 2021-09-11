@@ -4,6 +4,9 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import pandas as pd
 from pandas.plotting import register_matplotlib_converters
+
+import config
+
 register_matplotlib_converters()
 import MetaTrader5 as mt5
 import pytz, os, csv
@@ -35,7 +38,7 @@ class Mt5Client:
                 mt5.shutdown()
                 exit(0)
         else:
-            if not mt5.initialize():
+            if not mt5.initialize(server=server_name,login=account_number,password=password):
                 print("初始化 MT5 客户端失败")
                 print("请指定MT5路径后在尝试")
                 mt5.shutdown()
@@ -72,6 +75,7 @@ class Mt5Client:
         Return:
             pd.DataFrame
         """
+        mt5.initialize(server=config.Account.server, login=config.Account.username, password=config.Account.password)
         mt5_timeframe = mt5.TIMEFRAME_M1
         if timeframe == "M1":
             mt5_timeframe = mt5.TIMEFRAME_M1
@@ -93,7 +97,7 @@ class Mt5Client:
         start_time_list = start_time.split('-')
         end_time_list = end_time.split('-')
         start_time_list_int = list(map(int, start_time_list))
-        end_time_list_int = list(map(int, end_time_list))        
+        end_time_list_int = list(map(int, end_time_list))
         utc_from = datetime(start_time_list_int[0], start_time_list_int[1], start_time_list_int[2], tzinfo=timezone)
         utc_to = datetime(end_time_list_int[0], end_time_list_int[1], end_time_list_int[2], tzinfo=timezone)
         # 获取K线信息
@@ -103,7 +107,7 @@ class Mt5Client:
         result = [["symbol", "timestamp", "open", "high", "low", "close", "spread"]]
         for rate in rates:
             value = [symbol]
-            value += [rate[0],rate[1],rate[2],rate[3],rate[4],rate[6]]
+            value += [rate[0], rate[1], rate[2], rate[3], rate[4], rate[6]]
             result.append(value)
 
         work_dir = os.path.dirname(os.path.abspath(__file__))
@@ -112,7 +116,7 @@ class Mt5Client:
             print("目录 {0} 不存在, 自动创建目录".format(csv_path))
             os.makedirs(csv_path)
 
-        csv_filename = "{0}_{1}_{2}_{3}.csv".format(symbol, timeframe, ''.join(start_time_list), ''.join(end_time_list)) 
+        csv_filename = "{0}_{1}_{2}_{3}.csv".format(symbol, timeframe, ''.join(start_time_list), ''.join(end_time_list))
         csv_filepath = os.path.join(csv_path, csv_filename)
         if not os.path.exists(csv_filepath):
             print("开始将历史数据写入csv文件 {0}".format(csv_filepath))
@@ -122,7 +126,7 @@ class Mt5Client:
             print("历史数据写入成功")
         else:
             print("历史数据已经存在路径 {0}".format(csv_filepath))
-        
+
         rates_frame = pd.DataFrame(rates)
         return rates_frame
 
@@ -138,16 +142,17 @@ class Mt5Client:
         if order_type == "BUY":
             request_order_type = mt5.ORDER_TYPE_BUY
 
-        request = { 
-            "magic": magic, 
-            "symbol": symbol, 
-            "action": mt5.TRADE_ACTION_DEAL, 
-            "volume": lot, 
-            "type": request_order_type, 
-            "deviation": 5,     
-            "comment": cmt, 
-            } 
-        result = mt5.order_send(request) 
+        request = {
+            "magic": magic,
+            "symbol": symbol,
+            "action": mt5.TRADE_ACTION_DEAL,
+            "volume": lot,
+            "type": request_order_type,
+            "deviation": 5,
+            "comment": cmt,
+        }
+        result = mt5.order_send(request)
+
 
     def close_order(self, magic, symbol, lot, cmt):
         """平仓
@@ -158,32 +163,29 @@ class Mt5Client:
         ticket: 订单号
         """
         # 获取symbol的未结持仓 
-        positions=mt5.positions_get(symbol=symbol) 
-        if positions==None: 
-            print("No positions on {0}, error code={1}".format(symbol, mt5.last_error())) 
-        elif len(positions)>0: 
-            print("Total positions on {0} = {1}".format(symbol, len(positions))
-            # display all open positions 
+        positions = mt5.positions_get(symbol=symbol)
+        if positions == None:
+            print("No positions on {0}, error code={1}".format(symbol, mt5.last_error()))
+        elif len(positions) > 0:
+            print("Total positions on {0} = {1}".format(symbol, len(positions)))
             for position in positions:
-                print(position) 
+                print(position)
                 ticket = position["ticket"]
-                request = { 
-                    "magic": magic, 
-                    "symbol": symbol, 
-                    "action": mt5.TRADE_ACTION_CLOSE_BY, 
-                    "volume": lot, 
-                    "type": mt5.ORDER_TYPE_CLOSE_BY, 
-                    "deviation": 5,     
-                    "comment": cmt, 
+                request = {
+                    "magic": magic,
+                    "symbol": symbol,
+                    "action": mt5.TRADE_ACTION_CLOSE_BY,
+                    "volume": lot,
+                    "type": mt5.ORDER_TYPE_CLOSE_BY,
+                    "deviation": 5,
+                    "comment": cmt,
                     "position_by": ticket,
-                    } 
-                result = mt5.order_send(request) 
+                }
+                result = mt5.order_send(request)
 
-if __name__ == "__main__":
-    client = Mt5Client(account_number=6042573, password='aqwrds7v', server_name='Swissquote-Server')
-    client.download_data("EURUSD", Mt5Client.M1, "2020-11-01", "2020-11-10")
-    client.shutdown()
-
-    
-
-
+            if __name__ == "__main__":
+                client = Mt5Client(account_number=config.Account.username, password=config.Account.password, server_name=config.Account.server)
+                client.download_data("EURUSD", Mt5Client.M1, "2020-11-01", "2020-11-10")
+                client.shutdown()
+    def copyrange(self, symbol, mt5_timeframe, utc_from, utc_to):
+        mt5.copy_rates_range(symbol, mt5_timeframe, utc_from, utc_to)

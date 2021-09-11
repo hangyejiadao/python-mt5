@@ -64,8 +64,8 @@ if __name__ == "__main__":
     start_time = '2020-01-18'
     finish_time = '2020-11-19'
     # indicators 格式，每个指标是一个列表， [指标名称， 参数起始值， 终止值， 每增加值]
-    iSMA_1 = [50, 101, 50]
-    iSMA_2 = [100, 201, 100]
+    iSMA_1 = [20, 101, 50]
+    iSMA_2 = [40, 201, 100]
 
     # 连接MT5获取历史数据
     client = Mt5Client(account_number=Account.username, password=Account.password, server_name=Account.server)

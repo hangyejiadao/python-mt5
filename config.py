@@ -2,9 +2,9 @@
 
 class Account:
     # 账户信息配置
-    username = 6042573
-    password = 'aqwrds7v'
-    server = 'Swissquote-Server'
+    username = 500101676
+    password = 'hxIpqAth'
+    server = 'ForexClub-MT5 Demo Server'
 
 
 
